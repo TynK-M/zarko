@@ -1,4 +1,7 @@
+![zig](https://img.shields.io/badge/Zig-0.16-orange)
+![version](https://img.shields.io/badge/version-0.1.0-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-greem.svg)](https://opensource.org/licenses/MIT)
+![repo size](https://img.shields.io/github/repo-size/TynK-M/zarko)
 
 # zarko
 
