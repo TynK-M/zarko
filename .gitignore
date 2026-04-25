@@ -10,3 +10,6 @@ zig-out/
 
 # Mise
 mise.toml
+
+# Local testing
+tests_local/

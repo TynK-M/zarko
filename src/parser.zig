@@ -3,8 +3,19 @@ const std = @import("std");
 pub const Config = @import("config.zig").Config;
 pub const Row = @import("row.zig").Row;
 
-/// Creates a CSV parser specialized for a reader type.
-/// The parser reads one line at a time and splits it into fields without allocation.
+/// Creates a zero-allocation CSV parser specialized for `ReaderType`.
+///
+/// `ReaderType` must provide:
+/// - `takeByte() !?u8`
+///
+/// The parser reads one record at a time from the input stream into a
+/// caller-provided line buffer, then splits fields into caller-provided
+/// field slices.
+///
+/// No heap allocations are performed during parsing.
+///
+/// This parser currently handles delimiter-separated records line-by-line
+/// and does not implement quoted-field CSV escaping.
 pub fn Parser(comptime ReaderType: type) type {
     return struct {
         const Self = @This();
@@ -35,7 +46,7 @@ pub fn Parser(comptime ReaderType: type) type {
             fields_buf: [][]const u8,
         ) !?Row {
             const len = try readLine(
-                &self.reader,
+                self,
                 line_buf,
                 self.config.record_delimiter,
             );
@@ -67,29 +78,26 @@ pub fn Parser(comptime ReaderType: type) type {
         }
 
         /// Reads a line from the reader into the buffer, stopping at the delimiter.
-        /// 
+        ///
         /// Returns:
         /// - `usize`: the number of bytes read into the buffer, excluding the delimiter.
         /// - `null`: if end of input (EOF) is reached before reading any data.
         /// - `error.LineTooLong`: if the line exceeds the buffer size.
-        /// 
+        ///
         /// Note: The buffer is not null-terminated, and the caller should use the returned length to determine the valid portion of the buffer.
         fn readLine(
-            reader: *ReaderType,
+            self: *Self,
             buf: []u8,
             delimiter: u8,
         ) !?usize {
             var i: usize = 0;
             while (true) {
-                const byte = reader.takeByte() catch |err| switch (err) {
-                    error.EndOfStream => {
-                        if (i == 0) return null;
-                        return i;
-                    },
-                    else => return err,
+                const byte = try self.reader.takeByte() orelse {
+                    if (i == 0) return null;
+                    return i;
                 };
 
-                if (byte == delimiter)return i;
+                if (byte == delimiter) return i;
                 if (i >= buf.len) return error.LineTooLong;
 
                 buf[i] = byte;
@@ -100,6 +108,8 @@ pub fn Parser(comptime ReaderType: type) type {
 }
 
 // Tests
+//
+// A Reader.fixed() is used as a simple in-memory reader for testing the parser.
 
 const testing = std.testing;
 

@@ -2,7 +2,6 @@ const std = @import("std");
 
 /// Runtime configuration for CSV parsing and writing.
 pub const Config = struct {
-
     /// Field separator character.
     delimiter: u8 = ',',
 
