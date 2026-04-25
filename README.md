@@ -33,8 +33,8 @@ Add zarko as a git dependency.
 
 ```zig
 .{
-    .name = "your_project",
-    .version = "0.0.2",
+    .name = <your_project_name>,
+    .version = <your_project_version>,
     .dependencies = .{
         .zarko = .{
             .url = "https://github.com/TynK-M/zarko",
