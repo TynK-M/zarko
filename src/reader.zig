@@ -11,7 +11,6 @@ const std = @import("std");
 /// - `read(...) == 0`
 /// - `takeByte() == null`
 pub const Reader = struct {
-    
     /// I/O context used for all file operations.
     io: std.Io,
 
@@ -74,11 +73,12 @@ pub const Reader = struct {
     /// Returns:
     /// - `u8`: next byte
     /// - `null`: end of file
-    pub fn takeByte(self: *Reader) !?u8 {
+    pub fn takeByte(self: *Reader) !u8 {
         var b: [1]u8 = undefined;
 
         const n = try self.reader.interface.readSliceShort(&b);
-        if (n == 0) return null;
+
+        if (n == 0) return error.EndOfStream;
 
         return b[0];
     }

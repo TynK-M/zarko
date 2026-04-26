@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub const Config = @import("config.zig").Config;
+pub const Dialect = @import("dialect.zig").Dialect;
 pub const Row = @import("row.zig").Row;
 
 /// Creates a zero-allocation CSV parser specialized for `ReaderType`.
@@ -24,13 +24,13 @@ pub fn Parser(comptime ReaderType: type) type {
         reader: ReaderType,
 
         /// Parser options.
-        config: Config,
+        dialect: Dialect,
 
         /// Creates a parser.
-        pub fn init(reader: ReaderType, config: Config) Self {
+        pub fn init(reader: ReaderType, dialect: Dialect) Self {
             return .{
                 .reader = reader,
-                .config = config,
+                .dialect = dialect,
             };
         }
 
@@ -48,7 +48,7 @@ pub fn Parser(comptime ReaderType: type) type {
             const len = try readLine(
                 self,
                 line_buf,
-                self.config.record_delimiter,
+                self.dialect.record_delimiter,
             );
 
             if (len == null) return null;
@@ -62,7 +62,7 @@ pub fn Parser(comptime ReaderType: type) type {
             var start: usize = 0;
             var i: usize = 0;
             while (i <= raw.len) : (i += 1) {
-                if ((i == raw.len) or (!(i == raw.len) and raw[i] == self.config.delimiter)) {
+                if ((i == raw.len) or (!(i == raw.len) and raw[i] == self.dialect.delimiter)) {
                     if (count >= fields_buf.len)
                         return error.TooManyFields;
 
@@ -92,9 +92,12 @@ pub fn Parser(comptime ReaderType: type) type {
         ) !?usize {
             var i: usize = 0;
             while (true) {
-                const byte = try self.reader.takeByte() orelse {
-                    if (i == 0) return null;
-                    return i;
+                const byte = self.reader.takeByte() catch |err| switch (err) {
+                    error.EndOfStream => {
+                        if (i == 0) return null;
+                        return i;
+                    },
+                    else => return err,
                 };
 
                 if (byte == delimiter) return i;

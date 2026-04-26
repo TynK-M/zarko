@@ -2,7 +2,7 @@
     .fingerprint = 0xfaabed8ee6e75fb4,
 
     .name = .zarko,
-    .version = "0.0.2",
+    .version = "0.0.3",
 
     .dependencies = .{},
 
