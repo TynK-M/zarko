@@ -80,12 +80,13 @@ pub fn Parser(comptime ReaderType: type) type {
                 }
 
                 const byte = maybe.?;
+                if (!in_quote and !field_started and byte == ' ') continue;
                 row_started = true;
 
                 if (in_quote) {
-                    if (byte == '"') {
+                    if (byte == self.dialect.quote) {
                         if (try self.getByte()) |next_byte| {
-                            if (next_byte == '"') {
+                            if (next_byte == self.dialect.quote) {
                                 try self.append(line_buf, &write_index, '"');
                                 field_started = true;
                             } else {
@@ -102,38 +103,34 @@ pub fn Parser(comptime ReaderType: type) type {
                     continue;
                 }
 
-                switch (byte) {
-                    '"' => {
-                        if (!field_started) {
-                            in_quote = true;
-                        } else {
-                            try self.append(line_buf, &write_index, '"');
-                            field_started = true;
-                        }
-                    },
-
-                    else => {
-                        if (byte == self.dialect.delimiter) {
-                            try self.pushField(
-                                fields_buf,
-                                &field_count,
-                                line_buf[field_start..write_index],
-                            );
-                            field_start = write_index;
-                            field_started = false;
-                        } else if (byte == self.dialect.record_delimiter) {
-                            return self.finishRow(
-                                fields_buf,
-                                &field_count,
-                                line_buf,
-                                field_start,
-                                write_index,
-                            );
-                        } else {
-                            try self.append(line_buf, &write_index, byte);
-                            field_started = true;
-                        }
-                    },
+                if (byte == self.dialect.quote) {
+                    if (!field_started) {
+                        in_quote = true;
+                    } else {
+                        try self.append(line_buf, &write_index, '"');
+                        field_started = true;
+                    }
+                } else {
+                    if (byte == self.dialect.delimiter) {
+                        try self.pushField(
+                            fields_buf,
+                            &field_count,
+                            line_buf[field_start..write_index],
+                        );
+                        field_start = write_index;
+                        field_started = false;
+                    } else if (byte == self.dialect.record_delimiter) {
+                        return self.finishRow(
+                            fields_buf,
+                            &field_count,
+                            line_buf,
+                            field_start,
+                            write_index,
+                        );
+                    } else {
+                        try self.append(line_buf, &write_index, byte);
+                        field_started = true;
+                    }
                 }
             }
         }

@@ -1,9 +1,10 @@
 /// Public API exports.
 ///
-/// Reader  :   byte-oriented file input.
-/// Parser  :   zero-allocation CSV parsing.
-/// Dialect :   parser dialect.
-/// Row     :   parsed record view.
+/// Reader          :   byte-oriented file input.
+/// Parser          :   zero-allocation CSV parsing.
+/// Dialect         :   parser dialect.
+/// DialectPresets  :   common dialect presets.
+/// Row             :   parsed record view.
 pub const Reader = @import("reader.zig").Reader;
 pub const Parser = @import("parser.zig").Parser;
 
