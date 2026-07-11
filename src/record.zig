@@ -1,25 +1,43 @@
+//! Provides a representation of a parsed CSV row.
+
 const std = @import("std");
 
+/// Represents a row of a parsed CSV.
+///
+/// A `Record` stores the fields contained in a single row.
 pub const Record = struct {
+    /// The fields contained in this record.
+    ///
+    /// The record does not own the field data.
     fields: []const []const u8,
 
+    /// Returns the number of fields in the record.
     pub fn len(self: Record) usize {
         return self.fields.len;
     }
 
+    /// Returns whether the record contains no fields.
     pub fn isEmpty(self: Record) bool {
         return self.fields.len == 0;
     }
 
+    /// Returns the field at `index`, or `null` if the `index` is
+    /// out of bound.
     pub fn get(self: Record, index: usize) ?[]const u8 {
         if (index >= self.fields.len) return null;
         return self.fields[index];
     }
 
+    /// Returns the field at `index`.
+    ///
+    /// Panics if `index` is outside the record bounds.
     pub fn at(self: Record, index: usize) []const u8 {
         return self.fields[index];
     }
 
+    /// Creates an iterator over the record fields.
+    ///
+    /// The iterator borrows the record's field storage.
     pub fn iterator(self: Record) Iterator {
         return .{
             .fields = self.fields,
@@ -27,10 +45,15 @@ pub const Record = struct {
         };
     }
 
+    /// Iterates over the fields of a record.
     pub const Iterator = struct {
+        /// The fields being iterated over.
         fields: []const []const u8,
+
+        /// Current position in the fields slice.
         index: usize,
 
+        /// Returns the next field, or `null` when iteration is complete.
         pub fn next(it: *Iterator) ?[]const u8 {
             if (it.index >= it.fields.len) return null;
 
