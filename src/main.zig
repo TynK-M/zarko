@@ -8,6 +8,8 @@ pub fn main() !void {
         \\name,age,city
         \\Matteo,22,Rome
         \\Linus,56,Helsinki
+        \\Ada,"36",London
+        \\QuoteTest,"312","Hello, ""World!"""
     ;
 
     var arena = std.heap.ArenaAllocator.init(

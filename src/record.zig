@@ -126,9 +126,7 @@ test "at returns field at valid index" {
         "Zarko",
     };
 
-    const record = Record{
-        .fields = &fields
-    };
+    const record = Record{ .fields = &fields };
 
     try testing.expectEqualStrings("Hi", record.at(0));
     try testing.expectEqualStrings("From", record.at(1));
@@ -140,9 +138,7 @@ test "at returns empty field correctly" {
         "",
     };
 
-    const record = Record{
-        .fields = &fields
-    };
+    const record = Record{ .fields = &fields };
 
     try testing.expectEqualStrings("", record.at(0));
 }
@@ -154,9 +150,7 @@ test "at can be used with len iteration" {
         "Zarko",
     };
 
-    const record = Record{
-        .fields = &fields
-    };
+    const record = Record{ .fields = &fields };
 
     var i: usize = 0;
     while (i < record.len()) : (i += 1) {
