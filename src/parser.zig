@@ -1,5 +1,6 @@
 const std = @import("std");
 const Record = @import("record.zig").Record;
+const Dialect = @import("dialect.zig").Dialect;
 
 pub const Error = error{
     InvalidCsv,
@@ -9,16 +10,19 @@ pub const Error = error{
 pub const Parser = struct {
     input: []const u8,
     pos: usize,
+    dialect: Dialect,
 
     allocator: std.mem.Allocator,
 
     pub fn init(
         input: []const u8,
         allocator: std.mem.Allocator,
+        dialect: Dialect,
     ) Parser {
         return .{
             .input = input,
             .pos = 0,
+            .dialect = dialect,
             .allocator = allocator,
         };
     }
@@ -35,28 +39,40 @@ pub const Parser = struct {
 
             if (self.pos >= self.input.len) break;
 
-            switch (self.input[self.pos]) {
-                ',' => {
-                    self.pos += 1;
-                },
+            const c = self.input[self.pos];
 
-                '\n' => {
-                    self.pos += 1;
-                    break;
-                },
-
-                '\r' => {
-                    self.pos += 1;
-
-                    if (self.pos < self.input.len and self.input[self.pos] == '\n') {
-                        self.pos += 1;
-                    }
-
-                    break;
-                },
-
-                else => return Error.InvalidCsv,
+            if (self.dialect.isSeparator(c)) {
+                self.pos += 1;
+                continue;
             }
+
+            switch (self.dialect.line_ending) {
+                .lf => {
+                    if (c == '\n') {
+                        self.pos += 1;
+                        break;
+                    }
+                },
+                .crlf => {
+                    if (c == '\r') {
+                        self.pos += 1;
+
+                        if (self.pos < self.input.len and self.input[self.pos] == '\n') {
+                            self.pos += 1;
+                        }
+
+                        break;
+                    }
+                },
+                .cr => {
+                    if (c == '\r') {
+                        self.pos += 1;
+                        break;
+                    }
+                },
+            }
+
+            return Error.InvalidCsv;
         }
 
         return .{
@@ -67,16 +83,18 @@ pub const Parser = struct {
     fn parseField(self: *Parser) ![]const u8 {
         if (self.pos >= self.input.len) return "";
 
-        if (self.input[self.pos] == '"') {
+        if (self.dialect.isQuote(self.input[self.pos])) {
             return self.parseQuotedField();
         }
 
         const start = self.pos;
 
         while (self.pos < self.input.len) {
-            switch (self.input[self.pos]) {
-                ',', '\n', '\r' => break,
-                else => self.pos += 1,
+            if (self.dialect.isSeparator(self.input[self.pos]) or 
+                self.dialect.isLineEnding(self.input, self.pos)) {
+                break;
+            } else {
+                self.pos += 1;
             }
         }
 
@@ -89,28 +107,24 @@ pub const Parser = struct {
         var escaped = false;
 
         while (self.pos < self.input.len) {
-            switch (self.input[self.pos]) {
-                '"' => {
-                    if (self.pos + 1 < self.input.len and
-                        self.input[self.pos + 1] == '"')
-                    {
-                        escaped = true;
-                        self.pos += 2;
-                        continue;
-                    }
+            if (self.dialect.isQuote(self.input[self.pos])) {
+                if (self.pos + 1 < self.input.len and
+                    self.dialect.isQuote(self.input[self.pos + 1]))
+                {
+                    escaped = true;
+                    self.pos += 2;
+                    continue;
+                }
 
-                    const end = self.pos;
-                    self.pos += 1;
+                const end = self.pos;
+                self.pos += 1;
 
-                    const raw = self.input[start..end];
-                    if (!escaped) return raw;
+                const raw = self.input[start..end];
+                if (!escaped) return raw;
 
-                    return try self.unescape(raw);
-                },
-
-                else => {
-                    self.pos += 1;
-                },
+                return try self.unescape(raw);
+            } else {
+                self.pos += 1;
             }
         }
 
@@ -122,11 +136,11 @@ pub const Parser = struct {
         var i: usize = 0;
 
         while (i < input.len) {
-            if (input[i] == '"' and
+            if (self.dialect.isQuote(input[i]) and
                 i + 1 < input.len and
-                input[i + 1] == '"')
+                input[i + 1] == self.dialect.quote)
             {
-                try out.append(self.allocator, '"');
+                try out.append(self.allocator, self.dialect.quote);
                 i += 2;
             } else {
                 try out.append(self.allocator, input[i]);

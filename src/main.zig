@@ -17,7 +17,7 @@ pub fn main() !void {
     );
     defer arena.deinit();
 
-    var parser = Parser.init(csv, arena.allocator());
+    var parser = Parser.init(csv, arena.allocator(), .{});
 
     while (try parser.next()) |record| {
         for (record.fields) |field| {
