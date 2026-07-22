@@ -90,8 +90,9 @@ pub const Parser = struct {
         const start = self.pos;
 
         while (self.pos < self.input.len) {
-            if (self.dialect.isSeparator(self.input[self.pos]) or 
-                self.dialect.isLineEnding(self.input, self.pos)) {
+            if (self.dialect.isSeparator(self.input[self.pos]) or
+                self.dialect.isLineEnding(self.input, self.pos))
+            {
                 break;
             } else {
                 self.pos += 1;

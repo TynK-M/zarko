@@ -1,5 +1,5 @@
 const std = @import("std");
-const Parser = @import("parser.zig").Parser;
+const zarko = @import("zarko");
 
 pub fn main() !void {
     std.debug.print("Zarko test.\n", .{});
@@ -17,7 +17,7 @@ pub fn main() !void {
     );
     defer arena.deinit();
 
-    var parser = Parser.init(csv, arena.allocator(), .{});
+    var parser = zarko.Parser.init(csv, arena.allocator(), .{});
 
     while (try parser.next()) |record| {
         for (record.fields) |field| {
