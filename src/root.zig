@@ -1,3 +1,9 @@
+//! Zarko is a CSV parsing library for Zig.
+//!
+//! Provides types for parsing CSV input, representing records, and
+//! configuring CSV dialect options such as separators, quotes, and
+//! line_endings.
+
 pub const Record = @import("record.zig").Record;
 
 pub const LineEnding = @import("line_ending.zig").LineEnding;

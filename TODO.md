@@ -17,9 +17,9 @@
 
 ## Documentation
 
-- [ ] Write README.md
+- [x] Write README.md
 - [ ] Write in-code docs
-  - [ ] dialect.zig
-  - [ ] line_ending.zig
+  - [x] dialect.zig
+  - [x] line_ending.zig
   - [ ] parser.zig
-  - [ ] root.zig
+  - [x] root.zig
