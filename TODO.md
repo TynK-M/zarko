@@ -7,6 +7,7 @@
   - [ ] TSV
   - [ ] Semicolon (glory to Italy)
 - [ ] Create CSV Writer
+- [ ] Create a FileParser(wrapper around Parser for files)
 
 ## Testing
 
@@ -23,3 +24,5 @@
   - [x] line_ending.zig
   - [ ] parser.zig
   - [x] root.zig
+- [ ] Write a CONTRIBUTING.md
+- [ ] Write templates for issues
