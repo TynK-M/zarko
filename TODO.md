@@ -24,5 +24,5 @@
   - [x] line_ending.zig
   - [ ] parser.zig
   - [x] root.zig
-- [ ] Write a CONTRIBUTING.md
-- [ ] Write templates for issues
+- [x] Write a CONTRIBUTING.md
+- [x] Write templates for issues
