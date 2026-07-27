@@ -2,10 +2,10 @@
 
 ## Features
 
-- [ ] Add dialect presets
-  - [ ] Excel
-  - [ ] TSV
-  - [ ] Semicolon (glory to Italy)
+- [x] Add dialect presets
+  - [x] Excel
+  - [x] TSV
+  - [x] Semicolon (glory to Italy)
 - [ ] Create CSV Writer
 - [ ] Create a FileParser(wrapper around Parser for files)
 
@@ -13,6 +13,7 @@
 
 - [ ] Add tests
   - [ ] dialect.zig
+  - [x] dialects.zig
   - [ ] line_ending.zig
   - [ ] parser.zig
 
@@ -21,6 +22,7 @@
 - [x] Write README.md
 - [ ] Write in-code docs
   - [x] dialect.zig
+  - [x] dialects.zig
   - [x] line_ending.zig
   - [ ] parser.zig
   - [x] root.zig

@@ -8,6 +8,7 @@ pub const Record = @import("record.zig").Record;
 
 pub const LineEnding = @import("line_ending.zig").LineEnding;
 pub const Dialect = @import("dialect.zig").Dialect;
+pub const dialects = @import("dialects.zig");
 
 pub const Parser = @import("parser.zig").Parser;
 
@@ -20,6 +21,7 @@ test {
 
         @import("line_ending.zig"),
         @import("dialect.zig"),
+        @import("dialects.zig"),
 
         @import("parser.zig"),
     };
