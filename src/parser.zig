@@ -1,19 +1,38 @@
+//! Provides a streaming CSV parser.
+
 const std = @import("std");
 const Record = @import("record.zig").Record;
 const Dialect = @import("dialect.zig").Dialect;
 
+/// Errors that can occur while parsing CSV input.
 pub const Error = error{
+    /// The input does not conform to the configured CSV dialect.
     InvalidCsv,
+
+    /// A quoted field was not terminated before the end of the input.
     UnterminatedQuote,
 };
 
+/// Parses CSV data into records.
+///
+/// A `Parser` reads from an input buffer and produces one `Record` at a
+/// time.
+/// Parsed records borrow fields slices from the input whenever possible.
+/// Fields requiring quote unescaping are newly allocated.
 pub const Parser = struct {
+    /// The CSV input being parsed.
     input: []const u8,
+
+    /// Current position within the input.
     pos: usize,
+
+    /// The CSV dialect used while parsing.
     dialect: Dialect,
 
+    /// Allocator used for record storage and unescaped fields.
     allocator: std.mem.Allocator,
 
+    /// Creates a parser for the given CSV input.
     pub fn init(
         input: []const u8,
         allocator: std.mem.Allocator,
@@ -27,6 +46,13 @@ pub const Parser = struct {
         };
     }
 
+    /// Parses and returns the next record.
+    ///
+    /// Returns `null` once the end of the input has been reached.
+    ///
+    /// The returned record owns its field slice. Individual field values
+    /// borrow from the input unless they contained escaped quotes, in which
+    /// case they are newly allocated.
     pub fn next(self: *Parser) !?Record {
         if (self.pos >= self.input.len) return null;
 
@@ -80,6 +106,9 @@ pub const Parser = struct {
         };
     }
 
+    /// Parses a single field from the current input position.
+    ///
+    /// Handles both quoted and unquoted fields.
     fn parseField(self: *Parser) ![]const u8 {
         if (self.pos >= self.input.len) return "";
 
@@ -102,6 +131,13 @@ pub const Parser = struct {
         return self.input[start..self.pos];
     }
 
+    /// Parses a quoted field.
+    ///
+    /// Escaped quote sequences are unescaped automatically. If no escaped
+    /// quotes are present, the returned slice borrows directly from the
+    /// input.
+    ///
+    /// Returns `Error.UnterminatedQuote` if the closing quote is missing.
     fn parseQuotedField(self: *Parser) ![]const u8 {
         self.pos += 1;
         const start = self.pos;
@@ -132,6 +168,9 @@ pub const Parser = struct {
         return Error.UnterminatedQuote;
     }
 
+    /// Replaces escaped quote sequences with a single quote character.
+    ///
+    /// Returns a newly allocated slice containing the unescaped field.
     fn unescape(self: *Parser, input: []const u8) ![]const u8 {
         var out: std.ArrayList(u8) = .empty;
         var i: usize = 0;

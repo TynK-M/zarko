@@ -14,17 +14,16 @@
 - [ ] Add tests
   - [ ] dialect.zig
   - [x] dialects.zig
-  - [ ] line_ending.zig
   - [ ] parser.zig
 
 ## Documentation
 
 - [x] Write README.md
-- [ ] Write in-code docs
+- [x] Write in-code docs
   - [x] dialect.zig
   - [x] dialects.zig
   - [x] line_ending.zig
-  - [ ] parser.zig
+  - [x] parser.zig
   - [x] root.zig
 - [x] Write a CONTRIBUTING.md
 - [x] Write templates for issues
