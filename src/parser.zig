@@ -34,8 +34,8 @@ pub const Parser = struct {
 
     /// Creates a parser for the given CSV input.
     pub fn init(
-        input: []const u8,
         allocator: std.mem.Allocator,
+        input: []const u8,
         dialect: Dialect,
     ) Parser {
         return .{

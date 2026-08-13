@@ -17,7 +17,7 @@ pub fn main() !void {
     );
     defer arena.deinit();
 
-    var parser = zarko.Parser.init(csv, arena.allocator(), .{});
+    var parser = zarko.Parser.init(arena.allocator(), csv, .{});
 
     while (try parser.next()) |record| {
         for (record.fields) |field| {
