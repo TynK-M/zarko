@@ -23,22 +23,34 @@ pub const Dialect = struct {
     /// Defaults to line feed (`.lf`).
     line_ending: LineEnding = .lf,
 
-    /// Returns wheter `c` is the configured field separator.
-    pub fn isSeparator(self: *Dialect, c: u8) bool {
+    // ------------------------------------ //
+    // INFO:                                //
+    // These functions take `Dialect` in    //
+    // place of `*Dialect` because we want  //
+    // to be able to use these functions on //
+    // immutable values, which we cannot do //
+    // when passing references. We could    //
+    // use `*const Dialect`, but the struct //
+    // is small (3bytes?) and the functions //
+    // are not mutating the struct.         //
+    // ------------------------------------ //
+
+    /// Returns whether `c: chararacter` is the configured field separator.
+    pub fn isSeparator(self: Dialect, c: u8) bool {
         return c == self.separator;
     }
 
-    /// Returns wheter `c` is the configured quote character.
-    pub fn isQuote(self: *Dialect, c: u8) bool {
+    /// Returns wheter `c: character` is the configured quote character.
+    pub fn isQuote(self: Dialect, c: u8) bool {
         return c == self.quote;
     }
 
-    /// Returns wheter a line ending starts at `pos` in `input`.
+    /// Returns whether a line ending starts at `pos` in `input`.
     ///
     /// The check depends on the configured `line_ending` convention.
     /// For multi-character line endings (e.g. `.crlf`) all their bytes
     /// must be present.
-    pub fn isLineEnding(self: *Dialect, input: []const u8, pos: usize) bool {
+    pub fn isLineEnding(self: Dialect, input: []const u8, pos: usize) bool {
         return switch (self.line_ending) {
             .lf => input[pos] == '\n',
             .cr => input[pos] == '\r',
@@ -47,3 +59,73 @@ pub const Dialect = struct {
         };
     }
 };
+
+// ------------- //
+// TESTING BLOCK //
+// ------------- //
+
+const std = @import("std");
+const testing = std.testing;
+
+test "default dialect values" {
+    const dialect = Dialect{};
+
+    try testing.expectEqual(@as(u8, ','), dialect.separator);
+    try testing.expectEqual(@as(u8, '"'), dialect.quote);
+    try testing.expectEqual(LineEnding.lf, dialect.line_ending);
+}
+
+test "predicates work on default const dialect" {
+    const dialect = Dialect{};
+
+    try testing.expect(dialect.isSeparator(','));
+    try testing.expect(!(dialect.isSeparator('|')));
+
+    try testing.expect(dialect.isQuote('"'));
+    try testing.expect(!(dialect.isQuote('.')));
+
+    try testing.expect(dialect.isLineEnding("hello, world!\n", 13));
+    try testing.expect(!(dialect.isLineEnding("hello, world!\n", 2)));
+}
+
+test "predicates work on custom dialect" {
+    // TODO: Should we limit what can be entered here?
+    const dialect = Dialect{
+        .line_ending = LineEnding.crlf,
+        .quote = '9',
+        .separator = 'j',
+    };
+
+    try testing.expect(dialect.isSeparator('j'));
+    try testing.expect(!(dialect.isSeparator(',')));
+
+    try testing.expect(dialect.isQuote('9'));
+    try testing.expect(!(dialect.isQuote('"')));
+
+    try testing.expect(dialect.isLineEnding("hello, world!\r\n", 13));
+    try testing.expect(!(dialect.isLineEnding("hello, world!\r\n", 2)));
+}
+
+test "isLineEnding with lf" {
+    const dialect = Dialect{ .line_ending = .lf };
+
+    try testing.expect(dialect.isLineEnding("a\n", 1));
+    try testing.expect(!dialect.isLineEnding("a\r", 1));
+    try testing.expect(!dialect.isLineEnding("ab", 1));
+}
+
+test "isLineEnding with cr" {
+    const dialect = Dialect{ .line_ending = .cr };
+
+    try testing.expect(dialect.isLineEnding("a\r", 1));
+    try testing.expect(!dialect.isLineEnding("a\n", 1));
+    try testing.expect(!dialect.isLineEnding("ab", 1));
+}
+
+test "isLineEnding with crlf requires both bytes" {
+    const dialect = Dialect{ .line_ending = .crlf };
+
+    try testing.expect(dialect.isLineEnding("a\r\n", 1));
+    try testing.expect(!dialect.isLineEnding("a\rb", 1));
+    try testing.expect(!dialect.isLineEnding("a\n", 1));
+}
