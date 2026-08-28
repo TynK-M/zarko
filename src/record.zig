@@ -4,12 +4,37 @@ const std = @import("std");
 
 /// Represents a row of a parsed CSV.
 ///
-/// A `Record` stores the fields contained in a single row.
+/// A `Record` stores the fields contained in a single row. Field values may
+/// either borrow from the parser input or refer to memory owned by the record.
+///
+/// The `fields` slice is owned by the record. Any field data stored in `owned`
+/// is also owned by the record and is released by `deinit`.
 pub const Record = struct {
     /// The fields contained in this record.
     ///
-    /// The record does not own the field data.
+    /// Individual fields may borrow from the parser input or refer to memory
+    /// owned by this record.
     fields: []const []const u8,
+
+    /// Fields data allocated while parsing this record.
+    ///
+    /// This is used for fields that require transformations such as quote
+    /// unescaping. The record owns these allocations and releases them when
+    /// `deinit` is called.
+    owned: []const []const u8 = &.{},
+
+    /// Releases all memory owned by the record.
+    ///
+    /// This frees the field data stored in `owned` and the `fields` array.
+    /// Fields data borrowed from the parser input is not freed.
+    pub fn deinit(self: *Record, allocator: std.mem.Allocator) void {
+        for (self.owned) |field| {
+            allocator.free(field);
+        }
+
+        allocator.free(self.owned);
+        allocator.free(self.fields);
+    }
 
     /// Returns the number of fields in the record.
     pub fn len(self: Record) usize {

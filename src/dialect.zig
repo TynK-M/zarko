@@ -23,22 +23,22 @@ pub const Dialect = struct {
     /// Defaults to line feed (`.lf`).
     line_ending: LineEnding = .lf,
 
-    /// Returns wheter `c` is the configured field separator.
-    pub fn isSeparator(self: *Dialect, c: u8) bool {
+    /// Returns whether `c: chararacter` is the configured field separator.
+    pub fn isSeparator(self: Dialect, c: u8) bool {
         return c == self.separator;
     }
 
-    /// Returns wheter `c` is the configured quote character.
-    pub fn isQuote(self: *Dialect, c: u8) bool {
+    /// Returns wheter `c: character` is the configured quote character.
+    pub fn isQuote(self: Dialect, c: u8) bool {
         return c == self.quote;
     }
 
-    /// Returns wheter a line ending starts at `pos` in `input`.
+    /// Returns whether a line ending starts at `pos` in `input`.
     ///
     /// The check depends on the configured `line_ending` convention.
     /// For multi-character line endings (e.g. `.crlf`) all their bytes
     /// must be present.
-    pub fn isLineEnding(self: *Dialect, input: []const u8, pos: usize) bool {
+    pub fn isLineEnding(self: Dialect, input: []const u8, pos: usize) bool {
         return switch (self.line_ending) {
             .lf => input[pos] == '\n',
             .cr => input[pos] == '\r',
@@ -47,3 +47,38 @@ pub const Dialect = struct {
         };
     }
 };
+
+const std = @import("std");
+const testing = std.testing;
+
+test "default dialect values" {
+    const dialect = Dialect{};
+
+    try testing.expectEqual(@as(u8, ','), dialect.separator);
+    try testing.expectEqual(@as(u8, '"'), dialect.quote);
+    try testing.expectEqual(LineEnding.lf, dialect.line_ending);
+}
+
+test "isLineEnding with lf" {
+    const dialect = Dialect{ .line_ending = .lf };
+
+    try testing.expect(dialect.isLineEnding("a\n", 1));
+    try testing.expect(!dialect.isLineEnding("a\r", 1));
+    try testing.expect(!dialect.isLineEnding("ab", 1));
+}
+
+test "isLineEnding with cr" {
+    const dialect = Dialect{ .line_ending = .cr };
+
+    try testing.expect(dialect.isLineEnding("a\r", 1));
+    try testing.expect(!dialect.isLineEnding("a\n", 1));
+    try testing.expect(!dialect.isLineEnding("ab", 1));
+}
+
+test "isLineEnding with crlf requires both bytes" {
+    const dialect = Dialect{ .line_ending = .crlf };
+
+    try testing.expect(dialect.isLineEnding("a\r\n", 1));
+    try testing.expect(!dialect.isLineEnding("a\rb", 1));
+    try testing.expect(!dialect.isLineEnding("a\n", 1));
+}
