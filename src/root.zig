@@ -4,25 +4,25 @@
 //! configuring CSV dialect options such as separators, quotes, and
 //! line_endings.
 
-pub const Record = @import("record.zig").Record;
+pub const Record = @import("Record.zig").Record;
 
-pub const LineEnding = @import("line_ending.zig").LineEnding;
-pub const Dialect = @import("dialect.zig").Dialect;
-pub const dialects = @import("dialects.zig");
+pub const LineEnding = @import("LineEnding.zig").LineEnding;
+pub const Dialect = @import("Dialect.zig").Dialect;
+pub const builtin_dialects = @import("builtin_dialects.zig");
 
-pub const Parser = @import("parser.zig").Parser;
+pub const Parser = @import("Parser.zig").Parser;
 
 const std = @import("std");
 const testing = std.testing;
 
 test {
     _ = .{
-        @import("record.zig"),
+        @import("Record.zig"),
 
-        @import("line_ending.zig"),
-        @import("dialect.zig"),
-        @import("dialects.zig"),
+        @import("LineEnding.zig"),
+        @import("Dialect.zig"),
+        @import("builtin_dialects.zig"),
 
-        @import("parser.zig"),
+        @import("Parser.zig"),
     };
 }

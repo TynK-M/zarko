@@ -1,6 +1,6 @@
 //! Defines CSV dialect configuration options.
 
-const LineEnding = @import("line_ending.zig").LineEnding;
+const LineEnding = @import("LineEnding.zig").LineEnding;
 
 /// Configuration options that define how CSV data is formatted.
 ///

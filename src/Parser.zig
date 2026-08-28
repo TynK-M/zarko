@@ -1,8 +1,8 @@
 //! Provides a streaming CSV parser.
 
 const std = @import("std");
-const Record = @import("record.zig").Record;
-const Dialect = @import("dialect.zig").Dialect;
+const Record = @import("Record.zig").Record;
+const Dialect = @import("Dialect.zig").Dialect;
 
 /// Errors that can occur while parsing CSV input.
 pub const Error = error{
@@ -233,7 +233,7 @@ pub const Parser = struct {
     }
 };
 
-const dialects = @import("dialects.zig");
+const builtin_dialects = @import("builtin_dialects.zig");
 const testing = std.testing;
 
 /// Asserts that the next record has exactly the `expected` field values.
@@ -432,7 +432,7 @@ test "blank line yields a record with one empty field" {
 }
 
 test "tsv dialect" {
-    var parser = Parser.init(std.testing.allocator, "a\tb\nc\td", dialects.tsv);
+    var parser = Parser.init(std.testing.allocator, "a\tb\nc\td", builtin_dialects.tsv);
 
     try expectRecord(&parser, &.{ "a", "b" });
     try expectRecord(&parser, &.{ "c", "d" });
@@ -440,7 +440,7 @@ test "tsv dialect" {
 }
 
 test "semicolon dialect" {
-    var parser = Parser.init(std.testing.allocator, "a;b\nc;d", dialects.semicolon);
+    var parser = Parser.init(std.testing.allocator, "a;b\nc;d", builtin_dialects.semicolon);
 
     try expectRecord(&parser, &.{ "a", "b" });
     try expectRecord(&parser, &.{ "c", "d" });
@@ -448,7 +448,7 @@ test "semicolon dialect" {
 }
 
 test "excel dialect uses crlf line endings" {
-    var parser = Parser.init(std.testing.allocator, "a,b\r\nc,d", dialects.excel);
+    var parser = Parser.init(std.testing.allocator, "a,b\r\nc,d", builtin_dialects.excel);
 
     try expectRecord(&parser, &.{ "a", "b" });
     try expectRecord(&parser, &.{ "c", "d" });

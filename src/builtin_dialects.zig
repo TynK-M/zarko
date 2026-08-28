@@ -1,7 +1,7 @@
 //! Common CSV dialect presets.
 
-const Dialect = @import("dialect.zig").Dialect;
-const LineEnding = @import("line_ending.zig").LineEnding;
+const Dialect = @import("Dialect.zig").Dialect;
+const LineEnding = @import("LineEnding.zig").LineEnding;
 
 /// Excel-compatible CSV dialect.
 ///

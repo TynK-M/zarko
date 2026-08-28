@@ -11,19 +11,19 @@
 
 ## Testing
 
-- [ ] Add tests
-  - [ ] dialect.zig
-  - [x] dialects.zig
-  - [ ] parser.zig
+- [x] Add tests
+  - [x] Dialect.zig (done by its-popplewell)
+  - [x] builtin_dialects.zig
+  - [x] Parser.zig (done by its-popplewell)
 
 ## Documentation
 
 - [x] Write README.md
 - [x] Write in-code docs
-  - [x] dialect.zig
-  - [x] dialects.zig
-  - [x] line_ending.zig
-  - [x] parser.zig
+  - [x] Dialect.zig (improved by its-popplewell)
+  - [x] builtin_dialects.zig
+  - [x] LineEnding.zig
+  - [x] Parser.zig (improved by its-popplewell)
   - [x] root.zig
 - [x] Write a CONTRIBUTING.md
 - [x] Write templates for issues
