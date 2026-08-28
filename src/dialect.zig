@@ -23,18 +23,6 @@ pub const Dialect = struct {
     /// Defaults to line feed (`.lf`).
     line_ending: LineEnding = .lf,
 
-    // ------------------------------------ //
-    // INFO:                                //
-    // These functions take `Dialect` in    //
-    // place of `*Dialect` because we want  //
-    // to be able to use these functions on //
-    // immutable values, which we cannot do //
-    // when passing references. We could    //
-    // use `*const Dialect`, but the struct //
-    // is small (3bytes?) and the functions //
-    // are not mutating the struct.         //
-    // ------------------------------------ //
-
     /// Returns whether `c: chararacter` is the configured field separator.
     pub fn isSeparator(self: Dialect, c: u8) bool {
         return c == self.separator;
@@ -60,10 +48,6 @@ pub const Dialect = struct {
     }
 };
 
-// ------------- //
-// TESTING BLOCK //
-// ------------- //
-
 const std = @import("std");
 const testing = std.testing;
 
@@ -73,37 +57,6 @@ test "default dialect values" {
     try testing.expectEqual(@as(u8, ','), dialect.separator);
     try testing.expectEqual(@as(u8, '"'), dialect.quote);
     try testing.expectEqual(LineEnding.lf, dialect.line_ending);
-}
-
-test "predicates work on default const dialect" {
-    const dialect = Dialect{};
-
-    try testing.expect(dialect.isSeparator(','));
-    try testing.expect(!(dialect.isSeparator('|')));
-
-    try testing.expect(dialect.isQuote('"'));
-    try testing.expect(!(dialect.isQuote('.')));
-
-    try testing.expect(dialect.isLineEnding("hello, world!\n", 13));
-    try testing.expect(!(dialect.isLineEnding("hello, world!\n", 2)));
-}
-
-test "predicates work on custom dialect" {
-    // TODO: Should we limit what can be entered here?
-    const dialect = Dialect{
-        .line_ending = LineEnding.crlf,
-        .quote = '9',
-        .separator = 'j',
-    };
-
-    try testing.expect(dialect.isSeparator('j'));
-    try testing.expect(!(dialect.isSeparator(',')));
-
-    try testing.expect(dialect.isQuote('9'));
-    try testing.expect(!(dialect.isQuote('"')));
-
-    try testing.expect(dialect.isLineEnding("hello, world!\r\n", 13));
-    try testing.expect(!(dialect.isLineEnding("hello, world!\r\n", 2)));
 }
 
 test "isLineEnding with lf" {

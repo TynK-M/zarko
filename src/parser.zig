@@ -46,22 +46,25 @@ pub const Parser = struct {
         };
     }
 
-    // Wrappers for Dialect functions for the Parser
-    // This helps us avoid passing around state everywhere
+    /// Checks if the current position in the buffer is a line ending.
     pub fn atLineEnding(self: *const Parser) bool {
         if (self.pos >= self.input.len) return false;
         return self.dialect.isLineEnding(self.input, self.pos);
     }
 
+    /// Checks if the current position in the buffer is a line ending.
     pub fn atSeparator(self: *const Parser) bool {
         if (self.pos >= self.input.len) return false;
         return self.dialect.isSeparator(self.input[self.pos]);
     }
 
+    /// Checks if the current position in the buffer is a quote.
     pub fn atQuote(self: *const Parser) bool {
         if (self.pos >= self.input.len) return false;
         return self.dialect.isQuote(self.input[self.pos]);
     }
+
+    /// Checks if the current position plus a given offset is a quote.
     pub fn atQuoteOffset(self: *const Parser, offset: usize) bool {
         if ((self.pos + offset >= self.input.len)) {
             return false;
@@ -70,6 +73,8 @@ pub const Parser = struct {
         return self.dialect.isQuote(self.input[self.pos + offset]);
     }
 
+    /// Checks if the current position plus a offset is in the bounds of the
+    /// buffer.
     pub fn inBounds(self: *const Parser, offset: usize) bool {
         return self.pos + offset < self.input.len;
     }
@@ -87,24 +92,41 @@ pub const Parser = struct {
         var fields: std.ArrayList([]const u8) = .empty;
         errdefer fields.deinit(self.allocator);
 
+        var owned: std.ArrayList([]const u8) = .empty;
+        errdefer {
+            for (owned.items) |field| {
+                self.allocator.free(field);
+            }
+            owned.deinit(self.allocator);
+        }
+
         while (true) {
-            const field = try self.parseField();
+            const field = try self.parseField(&owned);
             try fields.append(self.allocator, field);
 
             if (!self.inBounds(0)) break;
 
             if (self.atSeparator()) {
-                // skip over the sep
+                // Skip over the separator.
                 self.pos += 1;
                 continue;
             }
 
             if (self.atLineEnding()) {
-                // skip over the lineending (adjust for 1 or 2 byte ones)
-                const advance: usize = if (self.dialect.line_ending == .crlf) 2 else 1;
+                // Skip over the `LineEnding`, adjusting in base of the number
+                // of characters.
+                var advance: usize = 1;
+                switch (self.dialect.line_ending) {
+                    .lf, .cr => {
+                        advance = 1;
+                    },
+                    .crlf => {
+                        advance = 2;
+                    },
+                }
                 self.pos += advance;
 
-                // End row at line break
+                // End row at `LineEnding`.
                 break;
             }
 
@@ -113,17 +135,18 @@ pub const Parser = struct {
 
         return .{
             .fields = try fields.toOwnedSlice(self.allocator),
+            .owned = try owned.toOwnedSlice(self.allocator),
         };
     }
 
     /// Parses a single field from the current input position.
     ///
     /// Handles both quoted and unquoted fields.
-    fn parseField(self: *Parser) ![]const u8 {
+    fn parseField(self: *Parser, owned: *std.ArrayList([]const u8)) ![]const u8 {
         if (!self.inBounds(0)) return "";
 
         if (self.atQuote()) {
-            return self.parseQuotedField();
+            return self.parseQuotedField(owned);
         }
 
         const start = self.pos;
@@ -146,8 +169,8 @@ pub const Parser = struct {
     /// input.
     ///
     /// Returns `Error.UnterminatedQuote` if the closing quote is missing.
-    fn parseQuotedField(self: *Parser) ![]const u8 {
-        // skip over the leading quote (because [a..d] = [a, b, c])
+    fn parseQuotedField(self: *Parser, owned: *std.ArrayList([]const u8)) ![]const u8 {
+        // Skip over the leading quote.
         self.pos += 1;
         const start = self.pos;
 
@@ -156,27 +179,32 @@ pub const Parser = struct {
         while (self.pos < self.input.len) {
             if (self.atQuote()) {
 
-                // at double quote
+                // Check if at a double quote.
                 if (self.atQuoteOffset(1)) {
                     escaped = true;
                     self.pos += 2;
                     continue;
                 }
 
-                // if not at double quote, you've hit end
+                // If it is not at a double quote, reached end.
                 const end = self.pos;
                 self.pos += 1;
 
                 const raw = self.input[start..end];
                 if (!escaped) return raw;
 
-                return try unescape(self, raw);
+                const result = try unescape(self, raw);
+                errdefer self.allocator.free(result);
+
+                try owned.append(self.allocator, result);
+                return result;
             } else {
                 self.pos += 1;
             }
         }
 
-        // function begins with skipping quote, so must find second
+        // Function begins with a quote, so an ending one must be
+        // found, otherwise a `UnterminatedQuote` error is returned.
         return Error.UnterminatedQuote;
     }
 
@@ -189,11 +217,10 @@ pub const Parser = struct {
 
         var i: usize = 0;
         while (i < input.len) {
-            const isDoubleQuote = self.dialect.isQuote(input[i]) and
+            if (self.dialect.isQuote(input[i]) and
                 i + 1 < input.len and
-                self.dialect.isQuote(input[i + 1]);
-
-            if (isDoubleQuote) {
+                self.dialect.isQuote(input[i + 1]))
+            {
                 try out.append(self.allocator, self.dialect.quote);
                 i += 2;
             } else {
@@ -206,16 +233,13 @@ pub const Parser = struct {
     }
 };
 
-// ------------- //
-// TESTING BLOCK //
-// ------------- //
-
 const dialects = @import("dialects.zig");
 const testing = std.testing;
 
-// Asserts that the next record has exactly the `expected` field values.
+/// Asserts that the next record has exactly the `expected` field values.
 fn expectRecord(parser: *Parser, expected: []const []const u8) !void {
-    const record = (try parser.next()) orelse return error.UnexpectedEndOfInput;
+    var record = (try parser.next()) orelse return error.UnexpectedEndOfInput;
+    defer record.deinit(parser.allocator);
 
     try testing.expectEqual(expected.len, record.len());
 
@@ -224,14 +248,14 @@ fn expectRecord(parser: *Parser, expected: []const []const u8) !void {
     }
 }
 
-// Asserts that the parser has consumed all of its input.
+/// Asserts that the parser has consumed all of its input.
 fn expectDone(parser: *Parser) !void {
     try testing.expect(try parser.next() == null);
 }
 
-// Returns whether `field` points into `input` rather than into memory the
-// parser allocated. Only meaningful for non-empty fields, since an empty
-// field may be a static empty string with no relation to the input.
+/// Returns whether `field` points into `input` rather than into memory the
+/// parser allocated. Only meaningful for non-empty fields, since an empty
+/// field may be a static empty string with no relation to the input.
 fn borrowsFromInput(input: []const u8, field: []const u8) bool {
     const start = @intFromPtr(input.ptr);
     const ptr = @intFromPtr(field.ptr);
@@ -240,39 +264,27 @@ fn borrowsFromInput(input: []const u8, field: []const u8) bool {
 }
 
 test "empty input yields no records" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "", .{});
+    var parser = Parser.init(std.testing.allocator, "", .{});
 
     try expectDone(&parser);
 }
 
 test "single row without a trailing line ending" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a,b,c", .{});
+    var parser = Parser.init(std.testing.allocator, "a,b,c", .{});
 
     try expectRecord(&parser, &.{ "a", "b", "c" });
     try expectDone(&parser);
 }
 
 test "trailing line ending does not produce an extra record" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a,b\n", .{});
+    var parser = Parser.init(std.testing.allocator, "a,b\n", .{});
 
     try expectRecord(&parser, &.{ "a", "b" });
     try expectDone(&parser);
 }
 
 test "multiple rows" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a,b\nc,d\ne,f", .{});
+    var parser = Parser.init(std.testing.allocator, "a,b\nc,d\ne,f", .{});
 
     try expectRecord(&parser, &.{ "a", "b" });
     try expectRecord(&parser, &.{ "c", "d" });
@@ -281,110 +293,77 @@ test "multiple rows" {
 }
 
 test "single field row" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "only", .{});
+    var parser = Parser.init(std.testing.allocator, "only", .{});
 
     try expectRecord(&parser, &.{"only"});
     try expectDone(&parser);
 }
 
 test "interior empty field" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a,,b", .{});
+    var parser = Parser.init(std.testing.allocator, "a,,b", .{});
 
     try expectRecord(&parser, &.{ "a", "", "b" });
     try expectDone(&parser);
 }
 
 test "trailing separator produces a trailing empty field" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a,", .{});
+    var parser = Parser.init(std.testing.allocator, "a,", .{});
 
     try expectRecord(&parser, &.{ "a", "" });
     try expectDone(&parser);
 }
 
 test "quoted field containing the separator" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a,\"b,c\",d", .{});
+    var parser = Parser.init(std.testing.allocator, "a,\"b,c\",d", .{});
 
     try expectRecord(&parser, &.{ "a", "b,c", "d" });
     try expectDone(&parser);
 }
 
 test "quoted field containing a line ending" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "\"one\ntwo\",x", .{});
+    var parser = Parser.init(std.testing.allocator, "\"one\ntwo\",x", .{});
 
     try expectRecord(&parser, &.{ "one\ntwo", "x" });
     try expectDone(&parser);
 }
 
 test "empty quoted field" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a,\"\",b", .{});
+    var parser = Parser.init(std.testing.allocator, "a,\"\",b", .{});
 
     try expectRecord(&parser, &.{ "a", "", "b" });
     try expectDone(&parser);
 }
 
 test "escaped quote inside a quoted field" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "\"say \"\"hi\"\"\"", .{});
+    var parser = Parser.init(std.testing.allocator, "\"say \"\"hi\"\"\"", .{});
 
     try expectRecord(&parser, &.{"say \"hi\""});
     try expectDone(&parser);
 }
 
 test "field that is only an escaped quote" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "\"\"\"\"", .{});
+    var parser = Parser.init(std.testing.allocator, "\"\"\"\"", .{});
 
     try expectRecord(&parser, &.{"\""});
     try expectDone(&parser);
 }
 
 test "escaped quote at the end of a quoted field" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "\"a\"\"\"", .{});
+    var parser = Parser.init(std.testing.allocator, "\"a\"\"\"", .{});
 
     try expectRecord(&parser, &.{"a\""});
     try expectDone(&parser);
 }
 
 test "quote is literal data in an unquoted field" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a\"b,c", .{});
+    var parser = Parser.init(std.testing.allocator, "a\"b,c", .{});
 
     try expectRecord(&parser, &.{ "a\"b", "c" });
     try expectDone(&parser);
 }
 
 test "a quote only opens a field when it is the first byte" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a, \"b,c\"", .{});
+    var parser = Parser.init(std.testing.allocator, "a, \"b,c\"", .{});
 
     try expectRecord(&parser, &.{ "a", " \"b", "c\"" });
     try expectDone(&parser);
@@ -393,11 +372,9 @@ test "a quote only opens a field when it is the first byte" {
 test "unquoted fields borrow from the input" {
     const input = "abc,def";
 
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), input, .{});
-    const record = (try parser.next()).?;
+    var parser = Parser.init(std.testing.allocator, input, .{});
+    var record = (try parser.next()).?;
+    defer record.deinit(parser.allocator);
 
     try testing.expect(borrowsFromInput(input, record.at(0)));
     try testing.expect(borrowsFromInput(input, record.at(1)));
@@ -406,11 +383,9 @@ test "unquoted fields borrow from the input" {
 test "quoted fields without escapes borrow from the input" {
     const input = "\"b,c\"";
 
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), input, .{});
-    const record = (try parser.next()).?;
+    var parser = Parser.init(std.testing.allocator, input, .{});
+    var record = (try parser.next()).?;
+    defer record.deinit(parser.allocator);
 
     try testing.expect(borrowsFromInput(input, record.at(0)));
 }
@@ -418,11 +393,9 @@ test "quoted fields without escapes borrow from the input" {
 test "a row can mix allocated and borrowed fields" {
     const input = "\"x\"\"y\",plain";
 
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), input, .{});
-    const record = (try parser.next()).?;
+    var parser = Parser.init(std.testing.allocator, input, .{});
+    var record = (try parser.next()).?;
+    defer record.deinit(parser.allocator);
 
     try testing.expectEqualStrings("x\"y", record.at(0));
     try testing.expectEqualStrings("plain", record.at(1));
@@ -432,37 +405,25 @@ test "a row can mix allocated and borrowed fields" {
 }
 
 test "unterminated quoted field" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "\"abc", .{});
+    var parser = Parser.init(std.testing.allocator, "\"abc", .{});
 
     try testing.expectError(Error.UnterminatedQuote, parser.next());
 }
 
 test "trailing escaped quote leaves the field unterminated" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "\"a\"\"", .{});
+    var parser = Parser.init(std.testing.allocator, "\"a\"\"", .{});
 
     try testing.expectError(Error.UnterminatedQuote, parser.next());
 }
 
 test "stray byte after a closing quote is rejected" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "\"ab\"x,c", .{});
+    var parser = Parser.init(std.testing.allocator, "\"ab\"x,c", .{});
 
     try testing.expectError(Error.InvalidCsv, parser.next());
 }
 
 test "blank line yields a record with one empty field" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a\n\nb", .{});
+    var parser = Parser.init(std.testing.allocator, "a\n\nb", .{});
 
     try expectRecord(&parser, &.{"a"});
     try expectRecord(&parser, &.{""});
@@ -471,10 +432,7 @@ test "blank line yields a record with one empty field" {
 }
 
 test "tsv dialect" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a\tb\nc\td", dialects.tsv);
+    var parser = Parser.init(std.testing.allocator, "a\tb\nc\td", dialects.tsv);
 
     try expectRecord(&parser, &.{ "a", "b" });
     try expectRecord(&parser, &.{ "c", "d" });
@@ -482,10 +440,7 @@ test "tsv dialect" {
 }
 
 test "semicolon dialect" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a;b\nc;d", dialects.semicolon);
+    var parser = Parser.init(std.testing.allocator, "a;b\nc;d", dialects.semicolon);
 
     try expectRecord(&parser, &.{ "a", "b" });
     try expectRecord(&parser, &.{ "c", "d" });
@@ -493,10 +448,7 @@ test "semicolon dialect" {
 }
 
 test "excel dialect uses crlf line endings" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
-    var parser = Parser.init(arena.allocator(), "a,b\r\nc,d", dialects.excel);
+    var parser = Parser.init(std.testing.allocator, "a,b\r\nc,d", dialects.excel);
 
     try expectRecord(&parser, &.{ "a", "b" });
     try expectRecord(&parser, &.{ "c", "d" });
@@ -504,27 +456,21 @@ test "excel dialect uses crlf line endings" {
 }
 
 test "custom quote character" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
     const dialect = Dialect{ .quote = '\'' };
-    var parser = Parser.init(arena.allocator(), "a,'b,c'", dialect);
+    var parser = Parser.init(std.testing.allocator, "a,'b,c'", dialect);
 
     try expectRecord(&parser, &.{ "a", "b,c" });
     try expectDone(&parser);
 }
 
 test "readme example" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
-    defer arena.deinit();
-
     const csv =
         \\name,age,city
         \\Matteo,22,Rome
         \\QuoteTest,"312","Hello, ""World!"""
     ;
 
-    var parser = Parser.init(arena.allocator(), csv, .{});
+    var parser = Parser.init(std.testing.allocator, csv, .{});
 
     try expectRecord(&parser, &.{ "name", "age", "city" });
     try expectRecord(&parser, &.{ "Matteo", "22", "Rome" });
