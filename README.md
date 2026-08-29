@@ -25,26 +25,26 @@ Import Zarko and create a parser with your CSV input.
 
 ```zig
 const csv =
-        \\name,age,city
-        \\Matteo,22,Rome
-        \\Linus,56,Helsinki
-        \\Ada,"36",London
-        \\QuoteTest,"312","Hello, ""World!"""
-    ;
+    \\name,age,city
+    \\Matteo,22,Rome
+    \\Linus,56,Helsinki
+    \\Ada,"36",London
+    \\QuoteTest,"312","Hello, ""World!"""
+;
 
-    var arena = std.heap.ArenaAllocator.init(
-        std.heap.page_allocator,
-    );
-    defer arena.deinit();
+var arena = std.heap.ArenaAllocator.init(
+    std.heap.page_allocator,
+);
+defer arena.deinit();
 
-    var parser = zarko.Parser.init(arena.allocator(), csv, .{});
+var parser = zarko.Parser.init(arena.allocator(), csv, .{});
 
-    while (try parser.next()) |record| {
-        for (record.fields) |field| {
-            std.debug.print("{s} ", .{field});
-        }
-        std.debug.print("\n", .{});
+while (try parser.next()) |record| {
+    for (record.fields) |field| {
+        std.debug.print("{s} ", .{field});
     }
+    std.debug.print("\n", .{});
+}
 ```
 
 Quoted fields are unwrapped and escaped quotes are unescaped:
