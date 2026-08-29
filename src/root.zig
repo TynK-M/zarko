@@ -11,6 +11,7 @@ pub const Dialect = @import("Dialect.zig").Dialect;
 pub const builtin_dialects = @import("builtin_dialects.zig");
 
 pub const Parser = @import("Parser.zig").Parser;
+pub const FileParser = @import("FileParser.zig").FileParser;
 
 const std = @import("std");
 const testing = std.testing;
@@ -24,5 +25,6 @@ test {
         @import("builtin_dialects.zig"),
 
         @import("Parser.zig"),
+        @import("FileParser.zig"),
     };
 }

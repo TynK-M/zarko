@@ -20,6 +20,9 @@ pub const Error = error{
 /// Parsed records borrow fields slices from the input whenever possible.
 /// Fields requiring quote unescaping are newly allocated.
 pub const Parser = struct {
+    /// Allocator used for record storage and unescaped fields.
+    allocator: std.mem.Allocator,
+
     /// The CSV input being parsed.
     input: []const u8,
 
@@ -28,9 +31,6 @@ pub const Parser = struct {
 
     /// The CSV dialect used while parsing.
     dialect: Dialect,
-
-    /// Allocator used for record storage and unescaped fields.
-    allocator: std.mem.Allocator,
 
     /// Creates a parser for the given CSV input.
     pub fn init(

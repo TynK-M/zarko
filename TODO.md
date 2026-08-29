@@ -2,21 +2,50 @@
 
 ## Features
 
+- [ ] Create CSV Writer
+- [ ] Create configurations for FileParser
+
+## Testing
+
+- [ ] Add tests
+  - [ ] FileParser.zig
+
+## Documentation
+
+- [ ] Write in-code docs
+  - [ ] FileParser.zig
+
+______________________________________________________________________
+
+# Done
+
+______________________________________________________________________
+
+## 29/09/2026
+
+### Features
+
+- [x] Create a FileParser(wrapper around Parser for files)
+
+______________________________________________________________________
+
+## Before commit c443ceb6d59aba1a28d40d8a4046ec9865306d79
+
+### Features
+
 - [x] Add dialect presets
   - [x] Excel
   - [x] TSV
   - [x] Semicolon (glory to Italy)
-- [ ] Create CSV Writer
-- [ ] Create a FileParser(wrapper around Parser for files)
 
-## Testing
+### Testing
 
 - [x] Add tests
   - [x] Dialect.zig (done by its-popplewell)
   - [x] builtin_dialects.zig
   - [x] Parser.zig (done by its-popplewell)
 
-## Documentation
+### Documentation
 
 - [x] Write README.md
 - [x] Write in-code docs
