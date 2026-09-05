@@ -17,4 +17,44 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&run_mod_tests.step);
+
+    const parser = b.addModule("parser", .{
+        .root_source_file = b.path("examples/parser.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const parser_exe = b.addExecutable(.{
+        .name = "parser",
+        .root_module = parser,
+    });
+    parser_exe.root_module.addImport("zarko", zarko_mod);
+
+    const run_parser = b.step(
+        "run-parser",
+        "Run the parser example",
+    );
+
+    const run_parser_cmd = b.addRunArtifact(parser_exe);
+    run_parser.dependOn(&run_parser_cmd.step);
+
+    const file_parser = b.addModule("file_parser", .{
+        .root_source_file = b.path("examples/file_parser.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const file_parser_exe = b.addExecutable(.{
+        .name = "file_parser",
+        .root_module = file_parser,
+    });
+    file_parser_exe.root_module.addImport("zarko", zarko_mod);
+
+    const run_file_parser = b.step(
+        "run-file-parser",
+        "Run the parser example",
+    );
+
+    const run_file_parser_cmd = b.addRunArtifact(file_parser_exe);
+    run_file_parser.dependOn(&run_file_parser_cmd.step);
 }
