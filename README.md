@@ -1,3 +1,5 @@
+[![Zig](https://img.shields.io/badge/Zig-0.16.0-color?logo=zig&color=%23f3ab20)](https://ziglang.org/)
+
 # Zarko
 
 A CSV parsing library for Zig.
@@ -16,6 +18,32 @@ ______________________________________________________________________
   - Field separators
   - Quote characters
   - Line endings
+
+______________________________________________________________________
+
+## Installation
+
+Add Zarko as a dependency in your `build.zig.zon` using the following command:
+
+```bash
+zig fetch --save https://github.com/TynK-M/zarko/archive/HEAD.tar.gz
+```
+
+Then add it as a dependency in your `build.zig.zon`:
+
+```bash
+const zarko_dep = b.dependency("zarko", .{
+    .target = target,
+    .optimize = optimize,
+});
+exe.root_module.addImport("zarko", zarko_dep.module("zarko"));
+```
+
+And, finally, import it in your Zig code:
+
+```zig
+const zarko = @import("zarko");
+```
 
 ______________________________________________________________________
 
@@ -58,6 +86,23 @@ becomes:
 ```text
 Hello, "World!"
 ```
+
+______________________________________________________________________
+
+## Examples
+
+Zarko offers pre-created examples under the `examples` folder, to run them use:
+
+```bash
+zig build run-<example-name>
+```
+
+The existing example names are:
+
+|Name|Corresponding file|
+|-|-|
+|parser|`examples/parser.zig`|
+|file-parser|`examples/file_parser.zig`|
 
 ______________________________________________________________________
 
@@ -109,23 +154,9 @@ Matteo;22;Rome
 
 ______________________________________________________________________
 
-## Installation
+## Contributing
 
-Add Zarko as a dependency in your `build.zig.zon`:
-
-```zig
-.dependencies = .{
-    .zarko = .{
-        .url = "https://github.com/TynK-M/zarko/archive/HEAD.tar.gz",
-    },
-},
-```
-
-Then import it in your Zig code:
-
-```zig
-const zarko = @import("zarko");
-```
+Every contribution is welcome, for more informations regarding contributions refer to [contributing](CONTRIBUTING.md).
 
 ______________________________________________________________________
 
