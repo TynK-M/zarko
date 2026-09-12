@@ -1,4 +1,4 @@
-[![Zig](https://img.shields.io/badge/Zig-0.16.0-color?logo=zig&color=%23f3ab20)](https://ziglang.org/)
+[![Zig](https://img.shields.io/badge/Zig-0.16.0-color?logo=zig&color=%23f3ab20)](https://ziglang.org/) [![CI](https://github.com/TynK-M/zarko/actions/workflows/ci.yml/badge.svg)](https://github.com/TynK-M/zarko/actions/workflows/ci.yml)
 
 # Zarko
 
