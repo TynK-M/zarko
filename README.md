@@ -2,15 +2,16 @@
 
 # Zarko
 
-A CSV parsing library for Zig.
+A CSV library for Zig.
 
-Zarko provides a simple way to parse CSV data while supporting configurable dialects, records, quoting, and line endings.
+Zarko provides a simple way to parse and write CSVs while supporting configurable dialects, records, quoting, and line endings.
 
 ______________________________________________________________________
 
 ## Features
 
 - Parse CSV data from memory
+- Write CSV files
 - Support quoted fields
 - Handle escaped quotes
 - Borrow field data directly from the input when possible
@@ -31,7 +32,7 @@ zig fetch --save https://github.com/TynK-M/zarko/archive/HEAD.tar.gz
 
 Then add it as a dependency in your `build.zig.zon`:
 
-```bash
+```zig
 const zarko_dep = b.dependency("zarko", .{
     .target = target,
     .optimize = optimize,
@@ -103,6 +104,7 @@ The existing example names are:
 |-|-|
 |parser|`examples/parser.zig`|
 |file-parser|`examples/file_parser.zig`|
+|file-writer|`examples/file_writer.zig`|
 
 ______________________________________________________________________
 

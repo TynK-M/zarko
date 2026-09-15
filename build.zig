@@ -52,9 +52,29 @@ pub fn build(b: *std.Build) void {
 
     const run_file_parser = b.step(
         "run-file-parser",
-        "Run the parser example",
+        "Run the file parser example",
     );
 
     const run_file_parser_cmd = b.addRunArtifact(file_parser_exe);
     run_file_parser.dependOn(&run_file_parser_cmd.step);
+
+    const file_writer = b.addModule("file_writer", .{
+        .root_source_file = b.path("examples/file_writer.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const file_writer_exe = b.addExecutable(.{
+        .name = "file_writer",
+        .root_module = file_writer,
+    });
+    file_writer_exe.root_module.addImport("zarko", zarko_mod);
+
+    const run_file_writer = b.step(
+        "run-file-writer",
+        "Run the file writer example",
+    );
+
+    const run_file_writer_cmd = b.addRunArtifact(file_writer_exe);
+    run_file_writer.dependOn(&run_file_writer_cmd.step);
 }

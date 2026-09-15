@@ -13,7 +13,8 @@ pub const builtin_dialects = @import("builtin_dialects.zig");
 pub const Parser = @import("Parser.zig").Parser;
 pub const FileParser = @import("FileParser.zig").FileParser;
 
-pub const Writer = @import("Writer.zig");
+pub const Writer = @import("Writer.zig").Writer;
+pub const FileWriter = @import("FileWriter.zig").FileWriter;
 
 const std = @import("std");
 const testing = std.testing;
@@ -30,5 +31,6 @@ test {
         @import("FileParser.zig"),
 
         @import("Writer.zig"),
+        @import("FileWriter.zig"),
     };
 }

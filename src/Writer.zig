@@ -8,7 +8,7 @@ pub const Writer = struct {
     /// The choosed writer to use for writing.
     writer: *std.Io.Writer,
 
-    /// The CSV dialect used while writing.
+    /// The CSV dialect to use while writing.
     dialect: Dialect,
 
     /// Creates a writer from the given `std.Io.Writer`.
