@@ -35,3 +35,6 @@ jobs:
 
       - name: Run file parser example
         run: zig build run-file-parser
+
+      - name: Run file writer example
+        run: zig build run-file-writer
