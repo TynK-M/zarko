@@ -10,4 +10,13 @@ pub const LineEnding = enum {
 
     /// Carriage Return (`\r`)
     cr,
+
+    /// Returns the byte sequence used by this line ending.
+    pub fn bytes(self: LineEnding) []const u8 {
+        return switch (self) {
+            .lf => "\n",
+            .cr => "\r",
+            .crlf => "\r\n",
+        };
+    }
 };

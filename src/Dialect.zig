@@ -46,6 +46,18 @@ pub const Dialect = struct {
                 input[pos] == '\r' and input[pos + 1] == '\n',
         };
     }
+
+    /// Returns whether `c` is part of the configured line ending.
+    ///
+    /// For `.crlf`, `\r` is considered the line-ending byte because it
+    /// starts the configured `\r\n` sequence.
+    pub fn isLineEndingByte(self: Dialect, c: u8) bool {
+        return switch (self.line_ending) {
+            .lf => c == '\n',
+            .cr => c == '\r',
+            .crlf => c == '\r',
+        };
+    }
 };
 
 const std = @import("std");
