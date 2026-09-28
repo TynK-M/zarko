@@ -2,7 +2,6 @@
 
 ## Features
 
-- [ ] Create a CSV FileWriter
 - [ ] Create configurations for FileParser
 
 ## Testing
@@ -11,9 +10,6 @@
   - [ ] FileParser.zig
 
 ## Documentation
-
-- [ ] Write in-code docs
-  - [ ] FileParser.zig
 
 ______________________________________________________________________
 
@@ -26,6 +22,12 @@ ______________________________________________________________________
 ### Features
 
 - [x] Write a CSV Writer
+- [x] Create a CSV FileWriter
+
+### Documentation
+
+- [x] Write in-code docs
+  - [x] FileParser.zig
 
 ______________________________________________________________________
 
