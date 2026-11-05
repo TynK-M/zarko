@@ -477,3 +477,21 @@ test "readme example" {
     try expectRecord(&parser, &.{ "QuoteTest", "312", "Hello, \"World!\"" });
     try expectDone(&parser);
 }
+
+test "preserves crlf line endings inside quoted fields" {
+    const csv =
+        "id,description\r\n" ++
+        "1,\"This field contains\r\n" ++
+        "a CRLF line break\"\r\n" ++
+        "2,\"Another field\r\n" ++
+        "with multiple\r\n" ++
+        "CRLF line breaks\"\r\n" ++
+        "3,normal field\r\n";
+    var parser = Parser.init(std.testing.allocator, csv, .{ .line_ending = .crlf });
+
+    try expectRecord(&parser, &.{ "id", "description" });
+    try expectRecord(&parser, &.{ "1", "This field contains\r\na CRLF line break" });
+    try expectRecord(&parser, &.{ "2", "Another field\r\nwith multiple\r\nCRLF line breaks" });
+    try expectRecord(&parser, &.{ "3", "normal field" });
+    try expectDone(&parser);
+}
