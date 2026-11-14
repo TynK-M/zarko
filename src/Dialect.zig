@@ -39,10 +39,12 @@ pub const Dialect = struct {
     /// For multi-character line endings (e.g. `.crlf`) all their bytes
     /// must be present.
     pub fn isLineEnding(self: Dialect, input: []const u8, pos: usize) bool {
+        if (pos >= input.len) return false;
+
         return switch (self.line_ending) {
             .lf => input[pos] == '\n',
             .cr => input[pos] == '\r',
-            .crlf => pos + 1 < input.len and
+            .crlf => input.len - pos >= 2 and
                 input[pos] == '\r' and input[pos + 1] == '\n',
         };
     }
@@ -93,4 +95,26 @@ test "isLineEnding with crlf requires both bytes" {
     try testing.expect(dialect.isLineEnding("a\r\n", 1));
     try testing.expect(!dialect.isLineEnding("a\rb", 1));
     try testing.expect(!dialect.isLineEnding("a\n", 1));
+}
+
+test "isLineEnding handles out-of-bounds positions" {
+    const dialects = [_]Dialect{
+        .{ .line_ending = .lf },
+        .{ .line_ending = .cr },
+        .{ .line_ending = .crlf },
+    };
+
+    for (dialects) |dialect| {
+        try testing.expect(!dialect.isLineEnding("", 0));
+        try testing.expect(!dialect.isLineEnding("a", 1));
+        try testing.expect(!dialect.isLineEnding("a", 2));
+        try testing.expect(!dialect.isLineEnding("a", std.math.maxInt(usize)));
+    }
+}
+
+test "isLineEnding handles incomplete crlf at end of input" {
+    const dialect = Dialect{ .line_ending = .crlf };
+
+    try testing.expect(!dialect.isLineEnding("\r", 0));
+    try testing.expect(!dialect.isLineEnding("a\r", 1));
 }
