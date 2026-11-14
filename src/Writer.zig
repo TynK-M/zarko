@@ -73,7 +73,9 @@ pub const Writer = struct {
         for (field) |c| {
             if (dialect.isSeparator(c) or
                 dialect.isQuote(c) or
-                dialect.isLineEndingByte(c))
+                dialect.isLineEndingByte(c) or
+                c == '\r' or
+                c == '\n')
             {
                 return true;
             }
@@ -382,6 +384,51 @@ test "handles empty strings without quoting" {
 
     try std.testing.expectEqualStrings(
         "",
+        io_writer.buffered(),
+    );
+}
+
+test "quotes carriage return in LF dialect" {
+    var buffer: [128]u8 = undefined;
+    var io_writer = std.Io.Writer.fixed(&buffer);
+    var writer = Writer.init(&io_writer, .{
+        .line_ending = .lf,
+    });
+
+    try writer.writeRecord(&.{"hello\rworld"});
+
+    try std.testing.expectEqualStrings(
+        "\"hello\rworld\"\n",
+        io_writer.buffered(),
+    );
+}
+
+test "quotes line feed in CR dialect" {
+    var buffer: [128]u8 = undefined;
+    var io_writer = std.Io.Writer.fixed(&buffer);
+    var writer = Writer.init(&io_writer, .{
+        .line_ending = .cr,
+    });
+
+    try writer.writeRecord(&.{"hello\nworld"});
+
+    try std.testing.expectEqualStrings(
+        "\"hello\nworld\"\r",
+        io_writer.buffered(),
+    );
+}
+
+test "quotes line feed in CRLF dialect" {
+    var buffer: [128]u8 = undefined;
+    var io_writer = std.Io.Writer.fixed(&buffer);
+    var writer = Writer.init(&io_writer, .{
+        .line_ending = .crlf,
+    });
+
+    try writer.writeRecord(&.{"hello\nworld"});
+
+    try std.testing.expectEqualStrings(
+        "\"hello\nworld\"\r\n",
         io_writer.buffered(),
     );
 }
